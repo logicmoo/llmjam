@@ -1,0 +1,15 @@
+[project]
+name = "llmjam"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "sounddevice",
+    "crepe",
+    "openai",
+    "requests",
+    "python-rtmidi",
+    "python-dotenv>=1.1.0",
+    "tensorflow>=2.19.0",
+]
