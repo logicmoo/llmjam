@@ -14,7 +14,7 @@ api_key = os.getenv("OPENAI_API_KEY")
 llm = OpenAI(api_key=api_key)
 
 
-def get_llm_midi_response(midi_input, model="gpt-4o"):
+def get_llm_midi_response(midi_input, model="gpt-4.1-nano"):
     """
     Send MIDI input to the LLM and return a generated MIDI response as a list
     of note events.

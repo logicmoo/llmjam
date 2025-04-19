@@ -4,6 +4,9 @@ pitch_to_midi.py: Convert audio to MIDI notes using pitch detection (crepe).
 
 import crepe
 import numpy as np
+import tensorflow as tf
+
+print(tf.config.list_physical_devices('GPU'))
 
 
 def audio_to_midi(audio_data, samplerate=44100, threshold=0.3, min_note_len=0.1):
@@ -33,7 +36,7 @@ def audio_to_midi(audio_data, samplerate=44100, threshold=0.3, min_note_len=0.1)
           f"shape={audio_data.shape}")
     # Predict pitches and confidence
     time_arr, freq_arr, conf_arr, _ = crepe.predict(
-        audio_data, samplerate, viterbi=True, step_size=50
+        audio_data, samplerate, viterbi=True, step_size=30
     )
     print(f"[pitch_to_midi] crepe.predict returned {len(time_arr)} frames")
     # Convert to MIDI notes
