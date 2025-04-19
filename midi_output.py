@@ -28,8 +28,10 @@ def send_midi_sequence(midi_events, channel=0):
         'duration'.
         channel (int): MIDI channel (default 0).
     """
-    print(f"[midi_output] Called send_midi_sequence with {len(midi_events)} "
-          f"events, channel={channel}")
+    print("[midi_output] Called send_midi_sequence with ")
+    print(len(midi_events))
+    print("events,")
+    print(f"channel={channel}")
     # Sort events by start_time
     events = sorted(midi_events, key=lambda e: e['start_time'])
     start_time = time.time()
@@ -39,17 +41,23 @@ def send_midi_sequence(midi_events, channel=0):
         if wait_time > 0:
             print(f"[midi_output] Waiting {wait_time:.3f}s before next note...")
             time.sleep(wait_time)
-        note = event['note']
+        notes = event['note']
         velocity = event.get('velocity', 100)
         duration = event.get('duration', 0.5)
-        print(f"[midi_output] Note ON: note={note}, velocity={velocity}, "
-              f"duration={duration}")
-        # Send Note On
+        # Support both single note and list of notes (for chords)
+        if not isinstance(notes, list):
+            notes = [notes]
+        print(f"[midi_output] Note ON: notes={notes}, velocity={velocity},")
+        print(f"duration={duration}")
+        # Send Note On for all notes in the chord
         status_on = 0x90 | channel
-        midiout.send_message([status_on, note, velocity])
-        # Schedule Note Off
+        for note in notes:
+            midiout.send_message([status_on, note, velocity])
+        # Schedule Note Off for all notes
         time.sleep(duration)
         status_off = 0x80 | channel
-        print(f"[midi_output] Note OFF: "
-              f"note={note}")
-        midiout.send_message([status_off, note, 0])
+        print("[midi_output] Note OFF: notes=")
+        for n in notes:
+            print(n)
+        for note in notes:
+            midiout.send_message([status_off, note, 0])
