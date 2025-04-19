@@ -4,7 +4,7 @@ A real-time AI-powered musical jam session tool. Capture your melody via microph
 
 ## Features
 - **Audio-to-MIDI**: Converts your live audio input into MIDI notes using pitch detection (CREPE).
-- **LLM Musician**: Sends your melody to an LLM (e.g., OpenAI GPT-4) which responds with a new, creative MIDI sequence.
+- **LLM Musician**: Sends your melody to a Large Language Model (LLM) (e.g., OpenAI GPT-4 or any model via OpenRouter) which responds with a new, creative MIDI sequence.
 - **Virtual MIDI Output**: Plays the AI's response through a virtual MIDI port, usable with any DAW or synth.
 - **Call-and-response**: Designed for interactive, improvisational music sessions.
 
@@ -36,10 +36,14 @@ pip install -r requirements.txt  # or use a tool like uv or pip-tools
 ```
 
 ## Setup
-1. **API Keys**: Create a `.env` file in the project root with your OpenAI API key:
+1. **API Keys**: Create a `.env` file in the project root with your API key. You can use either OpenAI or OpenRouter:
    ```
+   # For OpenAI (default)
    OPENAI_API_KEY=sk-...
+   # Or for OpenRouter (uses https://openrouter.ai, supports many models)
+   OPENROUTER_API_KEY=...  # If set, OpenRouter will be used instead of OpenAI
    ```
+   If both are set, OpenRouter will be used.
 2. **Audio/MIDI Devices**: Ensure your system has a working microphone and a DAW or synth that can receive MIDI from a virtual port.
 
 ## Usage
@@ -56,7 +60,7 @@ python llmjam.py
 ## How it Works
 1. **Audio Capture**: Listens for sound, records until silence.
 2. **Pitch Detection**: Uses CREPE (TensorFlow) to convert audio to MIDI notes.
-3. **LLM Response**: Sends MIDI to an LLM (e.g., GPT-4) with a musician prompt; receives a new melody as CSV.
+3. **LLM Response**: Sends MIDI to an LLM (e.g., GPT-4 or any OpenRouter-supported model) with a musician prompt; receives a new melody as CSV.
 4. **MIDI Playback**: Plays the AI's response through a virtual MIDI port.
 
 ## Troubleshooting
@@ -71,4 +75,5 @@ MIT
 ## Credits
 - [CREPE](https://github.com/marl/crepe) for pitch detection
 - [OpenAI](https://openai.com/) for LLM API
+- [OpenRouter](https://openrouter.ai/) for multi-provider LLM API
 - [python-rtmidi](https://github.com/SpotlightKid/python-rtmidi) for MIDI output

@@ -8,23 +8,40 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-api_key = os.getenv("OPENAI_API_KEY")
+# Support both OpenAI and OpenRouter (OpenAI-compatible) endpoints
+openai_api_key = os.getenv("OPENAI_API_KEY")
+openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
 
-llm = OpenAI(api_key=api_key)
+if openrouter_api_key:
+    # Use OpenRouter endpoint if key is present
+    llm = OpenAI(
+        api_key=openrouter_api_key,
+        base_url="https://openrouter.ai/api/v1"
+    )
+    model = "anthropic/claude-3.7-sonnet:thinking"
+    print("[llm_client] Using OpenRouter API")
+else:
+    llm = OpenAI(api_key=openai_api_key)
+    model = "gpt-4.1"
+    print("[llm_client] Using OpenAI API")
 
 
 system_prompt = """
-    You are a creative musician. Given a melody as a list of MIDI note events, respond with a new
-    melody as a compact CSV list of note events.
+    <role>jazz_musician</role>
+    <style>mellow</style>
+    <activity>Call and response between two musicians</activity>
+
+    <answer_format>
+    A compact CSV list of note events.
     Each event is a line: notes,velocity,start_time,duration.
     notes can be a single MIDI note (0-127) or multiple notes separated by '|' for chords
     (e.g., 60|64|67).
     velocity (0-127), start_time (seconds), duration (seconds).
     Only output the CSV, no extra text.
     Example (C major chord, then E):\n60|64|67,100,0.0,0.5\n64,90,0.5,0.5
+    </answer_format>
 
-    <style>mellow</style>
-    <activity>Call and response between two musicians</activity>
+    Given a melody as a list of MIDI note events, respond with a new melody.
 """
 
 
@@ -73,7 +90,7 @@ def csv_to_midi_events(csv_str):
     return events
 
 
-def get_llm_midi_response(midi_input, model="gpt-4.1"):
+def get_llm_midi_response(midi_input):
     """
     Send MIDI input to the LLM and return a generated MIDI response as a list
     of note events (supporting chords).
