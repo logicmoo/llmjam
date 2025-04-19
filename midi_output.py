@@ -34,16 +34,18 @@ def send_midi_sequence(midi_events, channel=0):
     print(f"channel={channel}")
     # Sort events by start_time
     events = sorted(midi_events, key=lambda e: e['start_time'])
+    # Normalize start times so the first event starts at 0
+    if events:
+        base_time = events[0]['start_time']
+        for event in events:
+            event['start_time'] -= base_time
     start_time = time.time()
-    first = True
     for event in events:
         now = time.time()
         wait_time = event['start_time'] - (now - start_time)
-        if wait_time > 0 and not first:
+        if wait_time > 0:
             print(f"[midi_output] Waiting {wait_time:.3f}s before next note...")
             time.sleep(wait_time)
-        else:
-            first = False
         notes = event['note']
         velocity = event.get('velocity', 100)
         duration = event.get('duration', 0.5)
