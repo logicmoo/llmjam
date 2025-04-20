@@ -2,8 +2,8 @@
 llmjam: Main entry point for the LLM jam session app.
 """
 
-import audio_input
-import pitch_to_midi
+from pitch_to_midi import StreamingPitchToMidi
+from audio_input import capture_audio_blocks_on_sound_then_until_silence
 import llm_client
 import midi_output
 import time
@@ -19,20 +19,27 @@ def main():
 
     print("To stop jamming, press Ctrl+C/Cmd+C")
 
+    block_samplerate = 44100
+    blocksize = 4096  # 2048 samples is ~46ms at 44100Hz, adjust as needed
+    block_duration = blocksize / block_samplerate
+
     while True:
         # 1. Capture audio
         print(
             "Waiting for sound to start, then recording until 1s of silence..."
         )
-        audio = audio_input.capture_on_sound_then_until_silence(
-            samplerate=44100
-        )
+        streaming_midi = StreamingPitchToMidi(samplerate=block_samplerate)
+        block_start_time = 0.0
 
-        # 2. Convert audio to MIDI
-        midi_input = pitch_to_midi.audio_to_midi(
-            audio,
-            samplerate=44100
-        )
+        for block in capture_audio_blocks_on_sound_then_until_silence(
+            samplerate=block_samplerate,
+            blocksize=blocksize
+        ):
+            # Process to MIDI while capturing
+            streaming_midi.process_block(block, block_start_time)
+            block_start_time += block_duration
+
+        midi_input = streaming_midi.get_midi_events()
         print(f"Detected MIDI notes: {midi_input}")
         if not midi_input:
             print("No notes detected. Try again.")
