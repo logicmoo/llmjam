@@ -5,7 +5,6 @@ llm_client.py: Communicate with OpenAI/OpenRouter to generate MIDI responses.
 import os
 from openai import OpenAI
 from dotenv import load_dotenv
-import tiktoken
 
 load_dotenv()
 
@@ -43,6 +42,7 @@ system_prompt = """
     </answer_format>
 
     Given a melody as a list of MIDI note events, respond with a new melody.
+    MOST IMPORTANT THING: Follow the given playing style/character.
 """
 
 
@@ -125,24 +125,9 @@ def stream_llm_midi_response(midi_input, playing_style="mellow"):
         "stream": True
     }
 
-    # Estimate output tokens using tiktoken for gpt-4o
-    encoding = tiktoken.encoding_for_model("gpt-4o")
-    prompt_tokens = sum(
-        len(encoding.encode(m["content"]))
-        for m in llm_params["messages"]
-    )
-    max_output_tokens = llm_params["max_tokens"]
-    print(
-        f"[llm_client] Estimated prompt tokens: {prompt_tokens}"
-    )
-    print(
-        f"[llm_client] Estimated max output tokens: {max_output_tokens}"
-    )
-
     buffer = ""
     # OpenAI Python SDK v1 streaming
     response = llm.chat.completions.create(**llm_params)
-    streamed_content = ""
     for chunk in response:
         delta = chunk.choices[0].delta.content \
             if hasattr(chunk.choices[0].delta, 'content') else None
@@ -159,15 +144,9 @@ def stream_llm_midi_response(midi_input, playing_style="mellow"):
                 events = csv_to_midi_events(line)
                 if events:
                     yield events[0]  # Only one event per line
-                    streamed_content += line + '\n'
             except Exception as e:
                 print(
                     f"[llm_client] Error parsing streamed MIDI event: {e}, "
                     f"line: {line}"
                 )
                 continue
-    # After streaming is done:
-    completion_tokens = len(encoding.encode(streamed_content))
-    print(
-        f"[llm_client] Estimated completion tokens: {completion_tokens}"
-    )
