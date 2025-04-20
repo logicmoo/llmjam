@@ -56,6 +56,7 @@ python llmjam.py
 - Play or sing a melody. Recording starts on sound and stops after 1s of silence.
 - The melody is converted to MIDI, sent to the LLM, and the AI's response is played back as MIDI.
 - To stop, press `Ctrl+C` or `Cmd+C`.
+- **To set or change the playing style at any time, press `s` during a jam session and enter a short phrase describing your desired style (e.g., "jazzy", "aggressive", "like a lullaby").**
 
 ## How it Works
 1. **Audio Capture**: Listens for sound, records until silence.

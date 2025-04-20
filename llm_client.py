@@ -28,8 +28,7 @@ else:
 
 
 system_prompt = """
-    <role>whatever you do, it's blues</role>
-    <style>strict</style>
+    <playing_style_or_character>{playing_style}</playing_style_or_character>
     <activity>Call and response between two musicians</activity>
     <velocity>humanize</velocity>
 
@@ -92,72 +91,37 @@ def csv_to_midi_events(csv_str):
     return events
 
 
-def get_llm_midi_response(midi_input):
-    """
-    Send MIDI input to the LLM and return a generated MIDI response as a list
-    of note events (supporting chords).
-    Args:
-        midi_input (list): List of input MIDI note events (dicts).
-        model (str): OpenAI model name.
-    Returns:
-        list: List of output MIDI note events (dicts).
-    """
-    print(f"[llm_client] Called get_llm_midi_response with midi_input: "
-          f"{midi_input}")
-    user_message = (
-        "Input melody (as CSV):\n" + midi_events_to_csv(midi_input)
-    )
-    print(f"[llm_client] Sending to LLM, model={model}")
-
-    llm_params = {
-        "model": model,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_message}
-        ],
-        "max_tokens": 512,
-        "temperature": 0.7
-    }
-
-    response = llm.chat.completions.create(
-        **llm_params
-    )
-    # Extract the CSV from the response
-    content = response.choices[0].message.content
-    preview = content[:200] + ('...' if len(content) > 200 else '')
-    print(f"[llm_client] LLM response content: {preview}")
-    try:
-        midi_events = csv_to_midi_events(content)
-    except Exception as e:
-        print(f"[llm_client] Error parsing LLM response: {e}")
-        raise ValueError("Could not parse LLM MIDI response: " + content)
-    print(f"[llm_client] Parsed midi_events: {midi_events}")
-    return midi_events
-
-
-def stream_llm_midi_response(midi_input):
+def stream_llm_midi_response(midi_input, playing_style="mellow"):
     """
     Stream LLM response and yield MIDI events as soon as each line is complete.
     Args:
         midi_input (list): List of input MIDI note events (dicts).
+        playing_style (str, optional): User-provided playing style phrase.
     Yields:
         dict: Parsed MIDI event dicts as soon as each line is available.
     """
-    print(f"[llm_client] Called stream_llm_midi_response with midi_input: "
-          f"{midi_input}")
+    print(
+        f"[llm_client] Called stream_llm_midi_response with midi_input: {midi_input}"
+    )
     user_message = (
         "Input melody (as CSV):\n" + midi_events_to_csv(midi_input)
     )
-    print(f"[llm_client] Streaming to LLM, model={model}")
+    print(
+        f"[llm_client] Streaming to LLM, model={model}"
+    )
+
+    sys_prompt = system_prompt.format(playing_style=playing_style)
+
+    print(sys_prompt)
 
     llm_params = {
         "model": model,
         "messages": [
-            {"role": "system", "content": system_prompt},
+            {"role": "system", "content": sys_prompt},
             {"role": "user", "content": user_message}
         ],
-        "max_tokens": 256,
-        "temperature": 0.35,
+        "max_tokens": 512,
+        "temperature": 0.75,
         "stream": True
     }
 
@@ -168,8 +132,12 @@ def stream_llm_midi_response(midi_input):
         for m in llm_params["messages"]
     )
     max_output_tokens = llm_params["max_tokens"]
-    print(f"[llm_client] Estimated prompt tokens: {prompt_tokens}")
-    print(f"[llm_client] Estimated max output tokens: {max_output_tokens}")
+    print(
+        f"[llm_client] Estimated prompt tokens: {prompt_tokens}"
+    )
+    print(
+        f"[llm_client] Estimated max output tokens: {max_output_tokens}"
+    )
 
     buffer = ""
     # OpenAI Python SDK v1 streaming
@@ -200,4 +168,6 @@ def stream_llm_midi_response(midi_input):
                 continue
     # After streaming is done:
     completion_tokens = len(encoding.encode(streamed_content))
-    print(f"[llm_client] Estimated completion tokens: {completion_tokens}")
+    print(
+        f"[llm_client] Estimated completion tokens: {completion_tokens}"
+    )
