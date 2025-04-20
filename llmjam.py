@@ -39,17 +39,10 @@ def main():
             continue
 
         # 3. Send MIDI to LLM and get response
-        print("Sending to LLM for response...")
-        midi_response = llm_client.get_llm_midi_response(midi_input)
-        print(f"LLM MIDI response: {midi_response}")
-        if not midi_response:
-            print("LLM did not return any notes. Try again.")
-            continue
-
-        # 4. Play LLM MIDI response (ignore audio input during playback)
-        print("Playing LLM response...")
-        # Start playback
-        midi_output.send_midi_sequence(midi_response)
+        print("Sending to LLM for response (streaming)...")
+        midi_event_stream = llm_client.stream_llm_midi_response(midi_input)
+        print("Playing LLM response as it streams...")
+        midi_output.play_midi_events_streaming(midi_event_stream)
         # Wait a bit before next round
         time.sleep(0.5)
 

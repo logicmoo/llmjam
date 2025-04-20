@@ -131,3 +131,56 @@ def get_llm_midi_response(midi_input):
         raise ValueError("Could not parse LLM MIDI response: " + content)
     print(f"[llm_client] Parsed midi_events: {midi_events}")
     return midi_events
+
+
+def stream_llm_midi_response(midi_input):
+    """
+    Stream LLM response and yield MIDI events as soon as each line is complete.
+    Args:
+        midi_input (list): List of input MIDI note events (dicts).
+    Yields:
+        dict: Parsed MIDI event dicts as soon as each line is available.
+    """
+    print(f"[llm_client] Called stream_llm_midi_response with midi_input: "
+          f"{midi_input}")
+    user_message = (
+        "Input melody (as CSV):\n" + midi_events_to_csv(midi_input)
+    )
+    print(f"[llm_client] Streaming to LLM, model={model}")
+
+    llm_params = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_message}
+        ],
+        "max_tokens": 512,
+        "temperature": 0.7,
+        "stream": True
+    }
+
+    buffer = ""
+    # OpenAI Python SDK v1 streaming
+    response = llm.chat.completions.create(**llm_params)
+    for chunk in response:
+        delta = chunk.choices[0].delta.content \
+            if hasattr(chunk.choices[0].delta, 'content') else None
+        if not delta:
+            continue
+        buffer += delta
+        while '\n' in buffer:
+            line, buffer = buffer.split('\n', 1)
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                # Try to parse the line as a MIDI event
+                events = csv_to_midi_events(line)
+                if events:
+                    yield events[0]  # Only one event per line
+            except Exception as e:
+                print(
+                    f"[llm_client] Error parsing streamed MIDI event: {e}, "
+                    f"line: {line}"
+                )
+                continue
