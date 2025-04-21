@@ -6,23 +6,42 @@ import os
 from openai import OpenAI
 from dotenv import load_dotenv
 
+# Add import for ollama, but only import if needed.
+# Avoid import errors if not installed.
+ollama = None
+
 load_dotenv()
 
-# Support both OpenAI and OpenRouter (OpenAI-compatible) endpoints
+# Read provider and model info from environment
+llm_provider = os.getenv("LLM_PROVIDER", "openai").lower()
 openai_api_key = os.getenv("OPENAI_API_KEY")
 openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
+openai_model = os.getenv("OPENAI_MODEL")
+openrouter_model = os.getenv("OPENROUTER_MODEL")
 
-if openrouter_api_key:
-    # Use OpenRouter endpoint if key is present
+
+ollama_model = os.getenv("OLLAMA_MODEL")
+
+if llm_provider == "openrouter":
     llm = OpenAI(
         api_key=openrouter_api_key,
         base_url="https://openrouter.ai/api/v1"
     )
-    model = "anthropic/claude-3.7-sonnet:thinking"
+    model = openrouter_model
     print("[llm_client] Using OpenRouter API")
+elif llm_provider == "ollama":
+    try:
+        import ollama
+    except ImportError:
+        raise ImportError(
+            "Ollama provider selected but 'ollama' package is not installed. "
+            "Run 'pip install ollama'."
+        )
+    model = ollama_model
+    print("[llm_client] Using Ollama (local) API")
 else:
     llm = OpenAI(api_key=openai_api_key)
-    model = "gpt-4.1"
+    model = openai_model
     print("[llm_client] Using OpenAI API")
 
 
@@ -101,7 +120,8 @@ def stream_llm_midi_response(midi_input, playing_style="mellow"):
         dict: Parsed MIDI event dicts as soon as each line is available.
     """
     print(
-        f"[llm_client] Called stream_llm_midi_response with midi_input: {midi_input}"
+        "[llm_client] Called stream_llm_midi_response with midi_input: "
+        f"{midi_input}"
     )
     user_message = (
         "Input melody (as CSV):\n" + midi_events_to_csv(midi_input)
@@ -114,39 +134,77 @@ def stream_llm_midi_response(midi_input, playing_style="mellow"):
 
     print(sys_prompt)
 
-    llm_params = {
-        "model": model,
-        "messages": [
+    if llm_provider == "ollama":
+        # Use ollama's streaming chat API
+        messages = [
             {"role": "system", "content": sys_prompt},
             {"role": "user", "content": user_message}
-        ],
-        "max_tokens": 512,
-        "temperature": 0.75,
-        "stream": True
-    }
+        ]
+        stream = ollama.chat(
+            model=model,
+            messages=messages,
+            stream=True
+        )
+        buffer = ""
+        for chunk in stream:
+            has_message = "message" in chunk
+            has_content = has_message and "content" in chunk["message"]
+            delta = chunk["message"]["content"] if has_content else None
+            if not delta:
+                continue
+            buffer += delta
+            while '\n' in buffer:
+                line, buffer = buffer.split('\n', 1)
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    events = csv_to_midi_events(line)
+                    if events:
+                        yield events[0]
+                except Exception as e:
+                    print(
+                        "[llm_client] Error parsing streamed MIDI event: "
+                        f"{e}, line: {line}"
+                    )
+                    continue
+    else:
+        llm_params = {
+            "model": model,
+            "messages": [
+                {"role": "system", "content": sys_prompt},
+                {"role": "user", "content": user_message}
+            ],
+            "max_tokens": 512,
+            "temperature": 0.75,
+            "stream": True
+        }
 
-    buffer = ""
-    # OpenAI Python SDK v1 streaming
-    response = llm.chat.completions.create(**llm_params)
-    for chunk in response:
-        delta = chunk.choices[0].delta.content \
-            if hasattr(chunk.choices[0].delta, 'content') else None
-        if not delta:
-            continue
-        buffer += delta
-        while '\n' in buffer:
-            line, buffer = buffer.split('\n', 1)
-            line = line.strip()
-            if not line:
+        buffer = ""
+        # OpenAI Python SDK v1 streaming
+        response = llm.chat.completions.create(**llm_params)
+        for chunk in response:
+            delta = chunk.choices[0].delta.content \
+                if hasattr(chunk.choices[0].delta, 'content') else None
+            if not delta:
                 continue
-            try:
-                # Try to parse the line as a MIDI event
-                events = csv_to_midi_events(line)
-                if events:
-                    yield events[0]  # Only one event per line
-            except Exception as e:
-                print(
-                    f"[llm_client] Error parsing streamed MIDI event: {e}, "
-                    f"line: {line}"
-                )
-                continue
+
+            print(delta)
+
+            buffer += delta
+            while '\n' in buffer:
+                line, buffer = buffer.split('\n', 1)
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    # Try to parse the line as a MIDI event
+                    events = csv_to_midi_events(line)
+                    if events:
+                        yield events[0]  # Only one event per line
+                except Exception as e:
+                    print(
+                        "[llm_client] Error parsing streamed MIDI event: "
+                        f"{e}, line: {line}"
+                    )
+                    continue

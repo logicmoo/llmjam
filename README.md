@@ -4,7 +4,7 @@ A real-time AI-powered musical jam session tool. Capture your melody via microph
 
 ## Features
 - **Audio-to-MIDI**: Converts your live audio input into MIDI notes using pitch detection (CREPE).
-- **LLM Musician**: Sends your melody to a Large Language Model (LLM) (e.g., OpenAI GPT-4 or any model via OpenRouter) which responds with a new, creative MIDI sequence.
+- **LLM Musician**: Sends your melody to a Large Language Model (LLM) (e.g., OpenAI GPT-4, any model via OpenRouter, or a local model via Ollama) which responds with a new, creative MIDI sequence.
 - **Virtual MIDI Output**: Plays the AI's response through a virtual MIDI port, usable with any DAW or synth.
 - **Call-and-response**: Designed for interactive, improvisational music sessions.
 
@@ -27,6 +27,7 @@ All dependencies are listed in `pyproject.toml`:
 - python-dotenv
 - tensorflow-macos
 - tensorflow-metal
+- ollama (for local LLMs)
 
 Install with:
 ```bash
@@ -36,14 +37,26 @@ pip install -r requirements.txt  # or use a tool like uv or pip-tools
 ```
 
 ## Setup
-1. **API Keys**: Create a `.env` file in the project root with your API key. You can use either OpenAI or OpenRouter:
+1. **LLM Provider and API Keys**: Create a `.env` file in the project root to configure your LLM provider and model. Supported providers are `openai`, `openrouter`, and `ollama` (for local models). Example configuration:
+
    ```
-   # For OpenAI (default)
+   # Choose provider: openai, openrouter, or ollama
+   LLM_PROVIDER=openai
+
+   # For OpenAI
    OPENAI_API_KEY=sk-...
-   # Or for OpenRouter (uses https://openrouter.ai, supports many models)
-   OPENROUTER_API_KEY=...  # If set, OpenRouter will be used instead of OpenAI
+   OPENAI_MODEL=gpt-4.1
+
+   # For OpenRouter (uses https://openrouter.ai, supports many models)
+   OPENROUTER_API_KEY=...
+   OPENROUTER_MODEL=anthropic/claude-3.7-sonnet:thinking
+
+   # For Ollama (local LLMs, requires Ollama running locally)
+   OLLAMA_MODEL=llama3.2
    ```
-   If both are set, OpenRouter will be used.
+
+   - If both `OPENAI_API_KEY` and `OPENROUTER_API_KEY` are set, and `LLM_PROVIDER` is not specified, OpenRouter will be used by default.
+   - For Ollama, make sure you have [Ollama](https://ollama.com/) installed and running locally, and the model you specify is available (e.g., run `ollama pull llama3.2`).
 2. **Audio/MIDI Devices**: Ensure your system has a working microphone and a DAW or synth that can receive MIDI from a virtual port.
 
 ## Usage
@@ -61,7 +74,7 @@ python llmjam.py
 ## How it Works
 1. **Audio Capture**: Listens for sound, records until silence.
 2. **Pitch Detection**: Uses CREPE (TensorFlow) to convert audio to MIDI notes.
-3. **LLM Response**: Sends MIDI to an LLM (e.g., GPT-4 or any OpenRouter-supported model) with a musician prompt; receives a new melody as CSV.
+3. **LLM Response**: Sends MIDI to an LLM (e.g., GPT-4, any OpenRouter-supported model, or a local Ollama model) with a musician prompt; receives a new melody as CSV.
 4. **MIDI Playback**: Plays the AI's response through a virtual MIDI port.
 
 ## Troubleshooting
@@ -77,4 +90,5 @@ MIT
 - [CREPE](https://github.com/marl/crepe) for pitch detection
 - [OpenAI](https://openai.com/) for LLM API
 - [OpenRouter](https://openrouter.ai/) for multi-provider LLM API
+- [Ollama](https://ollama.com/) for local LLM API
 - [python-rtmidi](https://github.com/SpotlightKid/python-rtmidi) for MIDI output
