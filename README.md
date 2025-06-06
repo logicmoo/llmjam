@@ -2,6 +2,9 @@
 
 A real-time AI-powered musical jam session tool. Capture your melody via microphone, convert it to MIDI, send it to a Large Language Model (LLM) for creative response, and play back the AI's musical reply through a virtual MIDI device.
 
+[![llmjam](screenshot.png)](https://youtu.be/pQYOFsK2gyk "llmjam")
+
+
 ## Features
 - **Audio-to-MIDI**: Converts your live audio input into MIDI notes using pitch detection (CREPE).
 - **LLM Musician**: Sends your melody to a Large Language Model (LLM) (e.g., OpenAI GPT-4, any model via OpenRouter, or a local model via Ollama) which responds with a new, creative MIDI sequence.
