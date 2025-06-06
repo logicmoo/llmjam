@@ -45,6 +45,9 @@ else:
     print("[llm_client] Using OpenAI API")
 
 
+# TODO: Parameterize BPM
+
+
 system_prompt = """
     <playing_style_or_character>{playing_style}</playing_style_or_character>
     <activity>Call and response between two musicians</activity>
@@ -53,15 +56,16 @@ system_prompt = """
     <answer_format>
     A compact CSV list of note events.
     Each event is a line: notes,velocity,start_time,duration.
-    notes can be a single MIDI note (0-127) or multiple notes separated by '|' for chords
+    notes can be a single MIDI note (0-127) or a chord of '|'-separated notes
     (e.g., 60|64|67).
     velocity (0-127), start_time (seconds), duration (seconds).
     Only output the CSV, no extra text.
     Example (C major chord, then E):\n60|64|67,100,0.0,0.5\n64,90,0.5,0.5
+
+    There is a 4/4 drum beat in {bpm} bpm playing.
     </answer_format>
 
     Given a melody as a list of MIDI note events, respond with a new melody.
-    MOST IMPORTANT THING: Follow the given playing style/character.
 """
 
 
@@ -110,7 +114,7 @@ def csv_to_midi_events(csv_str):
     return events
 
 
-def stream_llm_midi_response(midi_input, playing_style="mellow"):
+def stream_llm_midi_response(midi_input, playing_style="mellow", bpm=95):
     """
     Stream LLM response and yield MIDI events as soon as each line is complete.
     Args:
@@ -130,7 +134,7 @@ def stream_llm_midi_response(midi_input, playing_style="mellow"):
         f"[llm_client] Streaming to LLM, model={model}"
     )
 
-    sys_prompt = system_prompt.format(playing_style=playing_style)
+    sys_prompt = system_prompt.format(playing_style=playing_style, bpm=bpm)
 
     print(sys_prompt)
 

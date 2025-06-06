@@ -11,6 +11,7 @@ import threading
 import sys
 import termios
 import tty
+import argparse
 
 stop_flag = False
 playing_style = "mellow"
@@ -39,11 +40,32 @@ def main():
     global playing_style
 
     """Main event loop for llmjam."""
+    parser = argparse.ArgumentParser(
+        description="llmjam: A musical jam session with an LLM."
+    )
+    parser.add_argument(
+        "--bpm",
+        type=float,
+        default=95.0,
+        help="Set the beats per minute (BPM) for the jam session."
+    )
+    args = parser.parse_args()
+
     print("Welcome to llmjam!")
+    print(
+        f"Jamming at {args.bpm} BPM. To change playing style, "
+        "press 's' then Enter."
+    )
+
+    # Update BPM in midi_output module
+    midi_output.update_bpm(args.bpm)
+
     user_in = input("\nPress Enter to start jamming, or 'q' to quit: ")
     if user_in.strip().lower() == 'q':
         print("Goodbye!")
         exit()
+
+    midi_output.start_jam()
 
     print("To stop jamming, press Cmd+C/Ctrl+c")
 
@@ -87,7 +109,8 @@ def main():
         print("Sending to LLM for response (streaming)...")
         midi_event_stream = llm_client.stream_llm_midi_response(
             midi_input,
-            playing_style
+            playing_style,
+            args.bpm
         )
         print("Playing LLM response as it streams...")
         midi_output.play_midi_events_streaming(midi_event_stream)
