@@ -6,7 +6,7 @@ import rtmidi
 import time
 import threading
 import pygame
-
+import llmjam
 
 # --- Metronome and Clock ---
 BPM = 95.0
@@ -17,6 +17,37 @@ BAR_DURATION = BEAT_DURATION * BEATS_PER_BAR
 
 # --- Audio setup for drums ---
 pygame.mixer.init()
+
+midiout = None
+
+def setup_virtual_ports():
+    global midiout
+    port_name = "llmjam MIDI Out"
+    try:
+        midiout.open_virtual_port(port_name)
+        print(f"Opened virtual MIDI port: {port_name}")
+    except rtmidi.RtMidiError as e:
+        print(f"Error opening virtual MIDI port: {e}")
+        select_existing_ports()
+
+def select_existing_ports():
+    global midiout
+    
+    ports = midiout.get_ports()
+    if not ports:
+        print("❌ No MIDI output ports available.")
+        exit()
+    print("\nAvailable MIDI Output Ports:")
+    for i, name in enumerate(ports):
+        print(f"  [{i}] {name}")
+    try:
+        selection = int(input("Enter the number of the port to use: "))
+        midiout.open_port(selection)
+        print(f"Opened MIDI output port: {ports[selection]}")
+    except (ValueError, IndexError):
+        print("Invalid selection.")
+        exit()
+
 try:
     # NOTE: You need to provide these audio files.
     # Replace with the actual paths to your drum samples.
@@ -35,18 +66,18 @@ jam_start_time = 0.0
 
 
 # Create a virtual MIDI port (singleton)
-midiout = rtmidi.MidiOut()
+midiout = rtmidi.RtMidiOut()
 
 # Create a virtual MIDI port
 port_name = "llmjam MIDI Out"
-try:
-    midiout.open_virtual_port(port_name)
-    print(f"Opened virtual MIDI port: {port_name}")
-except rtmidi.RtMidiError as e:
-    print(f"Error opening virtual MIDI port: {e}")
-    # Handle error appropriately, maybe exit or fallback
-    exit()
 
+# Setup MIDI routing depending on --create flag
+if llmjam.args.create:
+    print("🔧 Creating virtual MIDI ports...")
+    setup_virtual_ports()
+else:
+    print("🔌 Listing available MIDI ports...")
+    select_existing_ports()
 
 def drum_beat_loop():
     """The main loop for the drum machine, runs in a separate thread."""

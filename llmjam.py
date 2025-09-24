@@ -35,6 +35,7 @@ def listen_for_s_and_phrase():
     finally:
         termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
 
+args = None
 
 def main():
     global playing_style
@@ -44,11 +45,16 @@ def main():
         description="llmjam: A musical jam session with an LLM."
     )
     parser.add_argument(
+        "--create", action="store_true", help="Create virtual MIDI ports instead of selecting existing ones.")
+
+    parser.add_argument(
         "--bpm",
         type=float,
         default=95.0,
         help="Set the beats per minute (BPM) for the jam session."
     )
+
+    global args
     args = parser.parse_args()
 
     print("Welcome to llmjam!")
