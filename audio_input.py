@@ -5,6 +5,17 @@ audio_input.py: Capture audio from the default output device.
 import sounddevice as sd
 import numpy as np
 
+def set_sound_source(named):
+    # enumber the device and select based on the name
+    dvs = sd.get_devices()
+    for i, dv in enumerate(dvs):
+         if dv['name'] == named:
+             sd.default.device = i
+             print(f"Selected device: {dv['name']}")
+             return
+
+    raise ValueError(f"Device '{named}' not found")
+
 
 def capture_audio(duration=2.0, samplerate=16000):
     """

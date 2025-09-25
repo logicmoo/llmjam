@@ -1,6 +1,6 @@
 import rtmidi
 
-midiin = rtmidi.RtMidiIn()
+midiin = rtmidi.MidiIn()
 
 def print_message(midi):
     if midi.isNoteOn():
@@ -10,14 +10,14 @@ def print_message(midi):
     elif midi.isController():
         print('CONTROLLER', midi.getControllerNumber(), midi.getControllerValue())
 
-ports = range(midiin.getPortCount())
+ports = range(midiin.get_port_count())
 if ports:
     for i in ports:
-        print(midiin.getPortName(i))
+        print(midiin.get_port_name(i))
     print("Opening port 0!")
-    midiin.openPort(0)
+    midiin.open_port(0)
     while True:
-        m = midiin.getMessage(250) # some timeout in ms
+        m = midiin.get_message() # some timeout in ms
         if m:
             print_message(m)
 else:

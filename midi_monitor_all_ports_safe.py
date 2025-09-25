@@ -15,7 +15,7 @@ def print_message(midi, port_name):
 
 def monitor_port(index, port_name):
     try:
-        print(f"rtmidi.RtMidiIn: ATTEMPT OPEN PORT {index}: {port_name}")
+        print(f"rtmidi.MidiIn: ATTEMPT OPEN PORT {index}: {port_name}")
         midiin = rtmidi.RtMidiIn()
         midiin.openPort(index)
         print(f"SUCCESS OPENING PORT {index}: {port_name}")

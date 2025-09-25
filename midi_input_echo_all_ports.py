@@ -28,10 +28,10 @@ class Collector(threading.Thread):
             if msg:
                 print_message(msg, self.portName)
 
-dev = rtmidi.RtMidiIn()
+dev = rtmidi.MidiIn()
 collectors = []
 for i in range(dev.getPortCount()):
-    device = rtmidi.RtMidiIn()
+    device = rtmidi.MidiIn()
     print('OPENING', dev.getPortName(i))
     collector = Collector(device, i)
     collector.start()

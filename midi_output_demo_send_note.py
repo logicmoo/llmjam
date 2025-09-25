@@ -2,7 +2,7 @@
 import rtmidi
 import time
 
-midiout = rtmidi.RtMidiOut()
+midiout = rtmidi.MidiOut()
 available_ports = midiout.getPortCount()
 
 # Open the first available output port
